@@ -27,7 +27,7 @@ class CustomRules
             ->countAllResults() > 0;
 
         if (!$exists) {
-            $error = "Nilai $str tidak ditemukan di tabel $table.";
+            $error = "Data value $str not found in table $table.";
         }
 
         return $exists;
@@ -50,7 +50,7 @@ class CustomRules
         }
 
         if (empty($ids)) {
-            $error = "Field harus diisi minimal 1 id.";
+            $error = "Field must be filled with at least 1 ID.";
             return false;
         }
 
@@ -60,7 +60,7 @@ class CustomRules
             ->countAllResults();
 
         if ($found !== count($ids)) {
-            $error = "Beberapa id tidak valid di tabel $table.";
+            $error = "Some id are invalid in the table $table.";
             return false;
         }
 
