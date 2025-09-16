@@ -11,6 +11,7 @@
 <div class="content">
     <div class="container-fluid">
         <form id="pegawaiForm">
+            <?= csrf_field() ?>
             <?php if($mode === 'edit'): ?>
                 <input type="hidden" name="_method" value="PUT">
             <?php endif; ?>
@@ -20,14 +21,10 @@
             <!-- Nama -->
             <div class="form-group">
                 <label for="name" required>Nama</label>
-                <input type="text" name="name" id="name" class="form-control <?= session('errors.name') ? 'is-invalid' : '' ?>" 
+                <input type="text" name="name" id="name" class="form-control" 
                     value="<?= old('name', $pegawai['name'] ?? '') ?>" 
                     data-toggle="tooltip" title="Masukkan nama pegawai" required>
-                <?php if(session('errors.name')): ?>
-                    <div class="invalid-feedback">
-                        <?= session('errors.name') ?>
-                    </div>
-                <?php endif; ?>
+                <div class="invalid-feedback"></div>
             </div>
 
             
@@ -44,12 +41,8 @@
                         <input type="radio" name="gender" value="W" autocomplete="off" <?= ($pegawai['gender'] ?? old('gender')) == 'W' ? 'checked' : '' ?> required> Wanita
                     </label>
                 </div>
-                <?php if(session('errors.gender')): ?>
-                    <small class="text-danger"><?= session('errors.gender') ?></small>
-                <?php endif; ?>
+                <div class="invalid-feedback"></div>
             </div>
-
-
 
             <!-- Departemen -->
             <div class="form-group">
@@ -61,26 +54,25 @@
                         </option>
                     <?php endforeach; ?>
                 </select>
+                <div class="invalid-feedback"></div>
             </div>
 
             <!-- Alamat -->
             <div class="form-group">
                 <label for="address">Alamat</label>
                 <input name="address" id="address" 
-                        class="form-control <?= session('errors.address') ? 'is-invalid' : '' ?>" 
+                        class="form-control" 
                         required
                         value="<?= old('address', $pegawai['address'] ?? '') ?>"
                         data-toggle="tooltip" title="Masukkan alamat maksimal 200 karakter">
-                <?php if(session('errors.address')): ?>
-                    <div class="invalid-feedback"><?= session('errors.address') ?></div>
-                <?php endif; ?>
+                <div class="invalid-feedback"></div>
             </div>
 
             <!-- Keahlian -->
             <div class="form-group">
                 <label for="keahlian">Keahlian</label>
-                <select name="keahlian[]" id="keahlian" class="form-control <?= session('errors.keahlian') ? 'is-invalid' : '' ?>" multiple required
-                data-toggle="tooltip" title="Tekan Ctrl/Cmd untuk memilih lebih dari satu keahlian">
+                <select name="keahlian[]" id="keahlian" class="form-control" multiple required
+                data-toggle="tooltip" title="Pilih satu atau lebih keahlian">
                     <?php foreach($allKeahlian as $k): ?>
                         <option value="<?= $k['id'] ?>" 
                             <?= in_array($k['id'], old('keahlian', explode(',', $pegawai['keahlian'] ?? ''))) ? 'selected' : '' ?>>
@@ -88,9 +80,7 @@
                         </option>
                     <?php endforeach; ?>
                 </select>
-                <?php if(session('errors.keahlian')): ?>
-                    <div class="invalid-feedback"><?= session('errors.keahlian') ?></div>
-                <?php endif; ?>
+                <div class="invalid-feedback"></div>
             </div>
             
             <button type="submit" class="btn btn-primary"><?= $mode === 'create' ? 'Simpan' : 'Update' ?></button>
@@ -103,7 +93,7 @@
 
 <?= $this->section('scripts') ?>
 <script>
-// On Submit (create/update)
+// Ajax Request Create/Update
 $("#pegawaiForm").on("submit", function(e) {
     e.preventDefault();
 
@@ -112,22 +102,41 @@ $("#pegawaiForm").on("submit", function(e) {
     let url = id 
         ? "<?= site_url('pegawai') ?>/" + id   // update
         : "<?= site_url('pegawai') ?>";        // create
-    let method = "POST";
 
     $.ajax({
         url: url,
-        type: method,
+        type: "POST",
         data: formData,
+        dataType: "json",
         success: function(res) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: 'Data berhasil disimpan.',
-                showConfirmButton: false,
-                timer: 300
-            }).then(() => {
-                window.location.href = "<?= site_url('pegawai') ?>";
-            });
+            // reset error state
+            $(".is-invalid").removeClass("is-invalid");
+            $(".invalid-feedback").text("");
+
+            if (res.status === "error") {
+                // Tampilkan validation error message
+                $.each(res.errors, function(field, msg) {
+                    let input = $(`[name="${field}"], [name="${field}[]"]`);
+                    let group = input.closest(".form-group");
+
+                    if (input.is(':radio, :checkbox')) {
+                        input.closest('.btn-group, .form-check').addClass("is-invalid");
+                    } else {
+                        input.addClass("is-invalid");
+                    }
+                    group.find(".invalid-feedback").text(msg);
+                });
+            } else if (res.status === "success") {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: res.message,
+                    showConfirmButton: false,
+                    timer: 1000
+                }).then(() => {
+                    window.location.href = "<?= site_url('pegawai') ?>";
+                });
+            }
         },
         error: function(xhr) {
             Swal.fire({
@@ -138,6 +147,13 @@ $("#pegawaiForm").on("submit", function(e) {
         }
     });
 });
+
+// Reset error otomatis ketika user mengubah field
+$(document).on("input change", "#pegawaiForm input, #pegawaiForm select", function() {
+    $(this).removeClass("is-invalid");
+    $(this).closest(".form-group").find(".invalid-feedback").text("");
+});
+
 
 $(document).ready(function() {
     // Gender Field

@@ -10,6 +10,11 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/2.3.4/css/dataTables.dataTables.min.css">
     <!-- Select2 -->
     <link rel="stylesheet" href="<?= base_url('adminlte/plugins/select2/css/select2.min.css') ?>">
+    <style>
+    .select2-container--default .select2-selection__choice {
+        color: #000 !important;
+    }
+    </style>
 </head>
 <body class="hold-transition sidebar-mini">
     <div class="wrapper">

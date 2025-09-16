@@ -33,7 +33,8 @@
 <?= $this->section('scripts') ?>
 <script>
 $(document).ready(function() {
-    $('#pegawaiTable').DataTable({
+    // DataTable
+    let table = $('#pegawaiTable').DataTable({
         processing: true,
         serverSide: true,
         ajax: "<?= site_url('pegawai') ?>",
@@ -50,6 +51,39 @@ $(document).ready(function() {
             }},
             { data: 'actions', orderable: false, searchable: false }
         ]
+    });
+
+    // handle delete
+    $('#pegawaiTable').on('click', '.deleteBtn', function() {
+        let id = $(this).data('id');
+        Swal.fire({
+            title: 'Yakin hapus?',
+            text: "Data tidak bisa dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: "<?= site_url('pegawai') ?>/" + id,
+                    type: "DELETE",
+                    success: function(res) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Terhapus!',
+                            text: 'Data berhasil dihapus.',
+                            timer: 1000,
+                            showConfirmButton: false
+                        });
+                        table.ajax.reload();
+                    },
+                    error: function(xhr) {
+                        Swal.fire('Oops!', 'Gagal menghapus data.', 'error');
+                    }
+                });
+            }
+        });
     });
 });
 </script>

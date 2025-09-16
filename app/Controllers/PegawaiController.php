@@ -36,10 +36,9 @@ class PegawaiController extends ResourceController
                 ->add('actions', function($row){
                     $btn = '<a href="'.site_url('pegawai/'.$row->id).'" class="btn btn-info btn-sm">Detail</a> ';
                     $btn .= '<a href="'.site_url('pegawai/'.$row->id.'/edit').'" class="btn btn-warning btn-sm">Edit</a> ';
-                    $btn .= '<form action="'.site_url('pegawai/'.$row->id).'" method="post" style="display:inline;">';
-                    $btn .= csrf_field();
-                    $btn .= '<input type="hidden" name="_method" value="DELETE">';
-                    $btn .= '<button class="btn btn-danger btn-sm" onclick="return confirm(\'Hapus pegawai ini?\')">Hapus</button></form>';
+                    $btn .= '<button type="button" class="btn btn-danger btn-sm deleteBtn" data-id="'.$row->id.'">
+                                Hapus
+                             </button>';
                     return $btn;
                 })
                 ->toJson(true);
@@ -73,12 +72,15 @@ class PegawaiController extends ResourceController
         $rules = [
             'name' => 'required|max_length[100]|regex_match[/^[a-zA-Z\s]+$/]',
             'gender' => 'required|in_list[P,W]',
-            'departemenid' => 'required|integer',
+            'departemenid'=> 'required|integer|existsInTable[Departemen.id]',
             'address' => 'required|max_length[200]',
-            'keahlian' => 'required|is_array',
+            'keahlian' => 'required|existsInTableMulti[Keahlian.id]',
         ];
         if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'errors' => $this->validator->getErrors()
+            ]);
         }
 
         $post = $this->request->getPost();
@@ -87,12 +89,16 @@ class PegawaiController extends ResourceController
             'gender'       => $post['gender'],
             'departemenid' => $post['departemenid'],
             'address'      => $post['address'],
-            'keahlian'     => isset($post['keahlian']) ? $post['keahlian'] : null,
+            'keahlian'     => isset($post['keahlian']) ? implode(',', $post['keahlian']) : null,
             'active'       => 1
         ];
 
         $this->model->insert($data);
-        return redirect()->to('/pegawai')->with('success', 'Data Pegawai berhasil ditambah.');
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'Data Pegawai berhasil ditambahkan'
+        ]);
     }
 
     // GET /pegawai/{id}
@@ -131,24 +137,47 @@ class PegawaiController extends ResourceController
     // PUT /pegawai/{id}
     public function update($id = null)
     {
+        // Validation
+        $rules = [
+            'name' => 'required|max_length[100]|regex_match[/^[a-zA-Z\s]+$/]',
+            'gender' => 'required|in_list[P,W]',
+            'departemenid'=> 'required|integer|existsInTable[Departemen.id]',
+            'address' => 'required|max_length[200]',
+            'keahlian' => 'required|existsInTableMulti[Keahlian.id]',
+        ];
+        if (!$this->validate($rules)) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'errors' => $this->validator->getErrors()
+            ]);
+        }
+
         $post = $this->request->getPost();
         $data = [
             'name'         => $post['name'],
             'gender'       => $post['gender'],
             'departemenid' => $post['departemenid'],
             'address'      => $post['address'],
-            'keahlian'     => isset($post['keahlian']) ? $post['keahlian'] : null,
+            'keahlian'     => isset($post['keahlian']) ? implode(',', $post['keahlian']) : null,
         ];
 
         $this->model->update($id, $data);
-        return redirect()->to('/pegawai');
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'Data Pegawai berhasil diperbarui'
+        ]);
     }
 
     // DELETE /pegawai/{id}
     public function delete($id = null)
     {
         $this->model->softDelete($id);
-        return redirect()->to('/pegawai')->with('success', "Data berhasil dihapus");
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'Data Pegawai berhasil dihapus'
+        ]);
     }
 
     // Export data pegawai
