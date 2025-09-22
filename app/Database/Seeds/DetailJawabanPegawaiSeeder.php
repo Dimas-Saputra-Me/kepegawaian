@@ -17,7 +17,25 @@ class DetailJawabanPegawaiSeeder extends Seeder
 
         $spreadsheet = IOFactory::load($file);
         $sheet = $spreadsheet->getActiveSheet();
-        $rows = $sheet->toArray();
+        
+        $rows = [];
+        foreach ($sheet->getRowIterator() as $row) {
+            $cellIterator = $row->getCellIterator();
+            $cellIterator->setIterateOnlyExistingCells(false);
+
+            $rowData = [];
+            foreach ($cellIterator as $cell) {
+                $val = $cell->getFormattedValue();
+
+                // change . to ,
+                if (is_numeric($val) && str_contains($val, '.')) {
+                    $val = str_replace('.', ',', $val);
+                }
+
+                $rowData[] = $val;
+            }
+            $rows[] = $rowData;
+        }
 
         $data = [];
 
